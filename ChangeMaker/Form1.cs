@@ -174,13 +174,17 @@ namespace ChangeMaker
         //======================================================================================
         private decimal CalculateChange(decimal saleAmount, decimal customerTender)
         {
-             
+             // reset the class level variable, to avoid issues with past values being passed twice.
+             changeGiven = "";
             // variables and instantiation of the Currency class
             NumericUpDown[] cashierNumericUpdowns = { cashTwenty, cashTens, cashFives, cashTwos, cashOnes, cashQuarter, cashDimes, cashNickels, };
             Currency currency = new Currency();
 
             // Change calculation
             decimal change = customerTender - saleAmount;
+            // this iteration aims to fix the issue of my denominations being calculated incorrectly, my order of operations was fudged
+            // which caused the program to give the wrong amount of change, it did not iterate through the whole array.
+            change = currency.RoundToNearest5Cents(change);
             decimal changeOwed = change;
 
             decimal cashierFloatSum = 0m;
@@ -194,12 +198,11 @@ namespace ChangeMaker
             }
             debugLabel2.Text = cashierFloatSum.ToString();
 
-            // reset the class level variable, to avoid issues with past values being passed twice.
-             changeGiven = "";
+            
             // iterate through every numericUpDown of the cashier float groupbox to find 
             for (int index = 0; index < currency.denominations.Length; index++)
             {
-                if (change >= currency.denominations[index] && cashierNumericUpdowns[index].Value > 0)
+                while (change >= currency.denominations[index] && cashierNumericUpdowns[index].Value > 0)
                 {
                     // the idea of this statement is to calculate how many coins or bills of a certain denomination 
                     // we can give to the customer without going over the amount of change owed. Math.Floor rounds it down.
@@ -214,7 +217,7 @@ namespace ChangeMaker
                     // subtract the amount of change we're giving in the current demonination from the total change
                     change -= denominationCount * currency.denominations[index];
                 }
-                else if (change >= currency.denominations[index])
+                if (change >= currency.denominations[index])
                 {
                     // display a message box and an error message and return nothing to the function caller
                     MessageBox.Show("Cashier has insufficient funds to complete transaction", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
